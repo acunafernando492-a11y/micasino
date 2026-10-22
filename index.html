@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Casino Paraguay - Juegos</title>
+    <style>
+        :root {
+            --bg-color: #0b0e14;
+            --card-bg: #161b22;
+            --gold: #f39c12;
+            --green: #27ae60;
+            --red: #e74c3c;
+            --text: #ffffff;
+            --hidden-color: #30363d;
+        }
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text);
+        }
+        header {
+            background-color: #010409;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--gold);
+        }
+        .logo { font-size: 1.5rem; font-weight: bold; color: var(--gold); }
+        .balance-badge {
+            background: #21262d;
+            padding: 8px 15px;
+            border-radius: 20px;
+            border: 1px solid var(--gold);
+            font-weight: bold;
+        }
+        .container { max-width: 1000px; margin: 20px auto; padding: 0 15px; }
+        .card {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        @media (max-width: 600px) { .grid-2 { grid-template-columns: 1fr; } }
+        input, select, button {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 5px;
+            border: 1px solid #30363d;
+            background: #0d1117;
+            color: white;
+            box-sizing: border-box;
+        }
+        button {
+            background: var(--gold);
+            color: black;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            transition: 0.2s;
+        }
+        button:hover { opacity: 0.9; }
+        button.green { background: var(--green); color: white; }
+        button.red { background: var(--red); color: white; }
+        .hidden { display: none !important; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #30363d; padding: 10px; text-align: left; }
+        th { background: #21262d; color: var(--gold); }
+        .slot-machine {
+            display: flex; justify-content: center; gap: 15px; font-size: 3rem; margin: 20px 0;
+            background: #0d1117; padding: 20px; border-radius: 10px; border: 2px solid var(--gold);
+        }
+        .scratch-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 300px; margin: 20px auto;
+        }
+        .scratch-panel {
+            aspect-ratio: 1; background: var(--hidden-color); display: flex; align-items: center; justify-content: center;
+            font-size: 2rem; border-radius: 5px; cursor: pointer; border: 1px solid #484f58; transition: 0.2s;
+        }
+        .scratch-panel.revealed { background: #0d1117; border-color: var(--gold); cursor: default; }
+        #dino-game { text-align: center; font-size: 1.5rem; font-weight: bold; }
+        #multiplier { font-size: 3rem; color: var(--gold); margin: 20px 0; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo">🎰 Casino Paraguay</div>
+    <div id="userHeaderInfo" class="hidden">
+        <span id="headerUsername"></span> | 
+        <span class="balance-badge">₲ <span id="headerBalance">0</span></span>
+        <button onclick="logout()" style="width:auto; margin-left:10px;">Salir</button>
+    </div>
+</header>
+
+<div class="container">
+
+    <!-- SECCIÓN: AUTENTICACIÓN -->
+    <div id="authSection" class="card grid-2">
+        <div>
+            <h3>Iniciar Sesión</h3>
+            <input type="text" id="loginCI" placeholder="Número de C.I.">
+            <input type="password" id="loginPass" placeholder="Contraseña">
+            <button onclick="login()">Ingresar</button>
+        </div>
+        <div>
+            <h3>Registrarse</h3>
+            <input type="text" id="regUser" placeholder="Nombre de Usuario">
+            <input type="text" id="regName" placeholder="Nombre y Apellido">
+            <input type="text" id="regCI" placeholder="C.I.">
+            <input type="text" id="regPhone" placeholder="Teléfono (ej: 0981...)">
+            <input type="password" id="regPass" placeholder="Contraseña">
+            <button class="green" onclick="register()">Crear Cuenta</button>
+        </div>
+    </div>
+
+    <!-- SECCIÓN: PANEL DE JUGADOR -->
+    <div id="playerSection" class="hidden">
+        <div class="card">
+            <h3>💳 Recargar Puntos / Saldo</h3>
+            <p>Monto mínimo de recarga: <strong>5.000 Gs.</strong></p>
+            <div class="grid-2">
+                <div>
+                    <label>Monto a Cargar (Gs.):</label>
+                    <input type="number" id="rechargeAmount" value="10000" min="5000" step="5000">
+                    <label>Método de Pago:</label>
+                    <select id="rechargeMethod">
+                        <option value="SIPAP">Transferencia Bancaria (SIPAP)</option>
+                        <option value="Giro Tigo">Giro Tigo</option>
+                        <option value="Billetera Personal">Billetera Personal</option>
+                    </select>
+                    <button class="green" onclick="sendWhatsAppRecharge()">Enviar Comprobante por WhatsApp</button>
+                </div>
+                <div style="font-size:0.9rem; color:#aaa;">
+                    <p><strong>Instrucciones:</strong></p>
+                    <ol>
+                        <li>Haz tu transferencia o giro al número oficial: <strong>0981-XXX-XXX</strong>.</li>
+                        <li>Toma captura del comprobante.</li>
+                        <li>Haz clic en el botón verde arriba para enviar los datos a la administración.</li>
+                        <li>Tus puntos serán acreditados en minutos.</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+
+        <!-- JUEGO: TRAGAPERRAS -->
+        <div class="card" style="text-align: center;">
+            <h3>🎰 Tragaperras Mburuvicha</h3>
+            <div class="slot-machine">
+                <span id="reel1">🍒</span>
+                <span id="reel2">🍋</span>
+                <span id="reel3">🔔</span>
+            </div>
+            <p>Apuesta por Giro: <strong>5.000 Gs.</strong></p>
+            <button class="green" style="width:200px; font-size:1.2rem;" onclick="spinSlot()">¡Girar (5.000 Gs)!</button>
+        </div>
+
+        <!-- JUEGO: RASPADA -->
+        <div class="card" style="text-align: center;">
+            <h3>🎫 Raspadita Mágica</h3>
+            <p>Descubre 3 símbolos iguales para ganar. ¡Es difícil pero paga x10!</p>
+            <div class="scratch-grid" id="scratchGrid">
+                <div class="scratch-panel" onclick="revealPanel(0)" id="panel0">?</div>
+                <div class="scratch-panel" onclick="revealPanel(1)" id="panel1">?</div>
+                <div class="scratch-panel" onclick="revealPanel(2)" id="panel2">?</div>
+                <div class="scratch-panel" onclick="revealPanel(3)" id="panel3">?</div>
+                <div class="scratch-panel" onclick="revealPanel(4)" id="panel4">?</div>
+                <div class="scratch-panel" onclick="revealPanel(5)" id="panel5">?</div>
+            </div>
+            <p>Costo del Ticket: <strong>5.000 Gs.</strong></p>
+            <button class="green" id="btnBuyScratch" style="width:200px;" onclick="buyScratch()">Comprar Raspadita</button>
+            <button class="red hidden" id="btnClaimScratch" style="width:200px;" onclick="claimScratch()">Cobrar Premio</button>
+        </div>
+
+        <!-- JUEGO: DINOSAURIO -->
+        <div class="card" style="text-align: center;">
+            <h3>🦖 Dinos Crash</h3>
+            <p>¡Retira tus ganancias antes de que el dino congele el multiplicador!</p>
+            <div id="dino-game">
+                <div id="multiplier">1.00x</div>
+                <button class="green" id="btnPlaceDinoBet" style="width:200px;" onclick="placeDinoBet()">Apostar 5.000 Gs.</button>
+                <button class="red hidden" id="btnCashoutDino" style="width:200px;" onclick="cashoutDino()">¡Retirar Ganancia!</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECCIÓN: PANEL ADMINISTRADOR (SOLO DUEÑO) -->
+    <div id="adminSection" class="hidden">
+        <div class="card" style="border: 2px solid var(--gold);">
+            <h2>⚙️ Panel de Control del Dueño</h2>
+            
+            <h3>1. Crear Nuevo Jugador Manualmente</h3>
+            <div class="grid-2">
+                <input type="text" id="admRegUser" placeholder="Usuario">
+                <input type="text" id="admRegName" placeholder="Nombre Completo">
+                <input type="text" id="admRegCI" placeholder="C.I.">
+                <input type="text" id="admRegPhone" placeholder="Teléfono">
+                <input type="password" id="admRegPass" placeholder="Clave Inicial">
+                <input type="number" id="admRegBalance" placeholder="Saldo Inicial (Gs.)" value="0">
+            </div>
+            <button class="green" onclick="adminCreateUser()">Registrar Jugador</button>
+
+            <hr style="margin:20px 0; border-color:#30363d;">
+
+            <h3>2. Acreditar o Descontar Saldo</h3>
+            <table id="usersTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>C.I.</th>
+                        <th>Usuario / Nombre</th>
+                        <th>Saldo Actual</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="usersTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    let currentUser = null;
+    let userToken = localStorage.getItem('token');
+
+    const SYMBOLS = ['🍒', '🍋', '🔔', '💎', '7️⃣'];
+
+    // Variables Raspadita
+    const SCRATCH_SYMBOLS = ['⭐', '💎', '7️⃣', '🍒', '🍋', '🔔', '🍀', '💰'];
+    let scratchGameActive = false;
+    let revealedCount = 0;
+    let currentScratchSymbols = [];
+    let panelsRevealed = [false, false, false, false, false, false];
+
+    // Variables Dino
+    let dinoGameActive = false;
+    let currentMultiplier = 1.00;
+    let dinoInterval = null;
+
+    window.onload = () => {
+        if (userToken) fetchProfile();
+    };
+
+    async function fetchProfile() {
+        const res = await fetch('/api/me', { headers: { 'Authorization': `Bearer ${userToken}` } });
+        if (res.ok) {
+            currentUser = await res.json();
+            updateUI();
+        } else {
+            logout();
+        }
+    }
+
+    function updateUI() {
+        document.getElementById('authSection').classList.add('hidden');
+        document.getElementById('userHeaderInfo').classList.remove('hidden');
+        document.getElementById('headerUsername').innerText = currentUser.username + ` (${currentUser.role.toUpperCase()})`;
+        document.getElementById('headerBalance').innerText = currentUser.balance.toLocaleString('es-PY');
+
+        if (currentUser.role === 'admin') {
+            document.getElementById('adminSection').classList.remove('hidden');
+            document.getElementById('playerSection').classList.add('hidden');
+            loadAdminUsers();
+        } else {
+            document.getElementById('playerSection').classList.remove('hidden');
+            document.getElementById('adminSection').classList.add('hidden');
+        }
+    }
+
+    async function login() {
+        const ci = document.getElementById('loginCI').value;
+        const password = document.getElementById('loginPass').value;
+        const res = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ci, password })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            localStorage.setItem('token', data.token);
+            userToken = data.token;
+            currentUser = data.user;
+            updateUI();
+        } else { alert(data.error); }
+    }
+
+    async function register() {
+        const username = document.getElementById('regUser').value;
+        const fullname = document.getElementById('regName').value;
+        const ci = document.getElementById('regCI').value;
+        const phone = document.getElementById('regPhone').value;
+        const password = document.getElementById('regPass').value;
+
+        const res = await fetch('/api/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, fullname, ci, phone, password })
+        });
+        const data = await res.json();
+        if (res.ok) { alert('Registro completado. Ahora puedes iniciar sesión.'); }
+        else { alert(data.error); }
+    }
+
+    function logout() {
+        localStorage.removeItem('token');
+        location.reload();
+    }
+
+    function sendWhatsAppRecharge() {
+        const amount = document.getElementById('rechargeAmount').value;
+        const method = document.getElementById('rechargeMethod').value;
+        const adminPhone = "0975668412"; 
+        
+        const text = `Hola, solicito recarga para mi cuenta:%0A- *Usuario/C.I.:* ${currentUser.ci}%0A- *Nombre:* ${currentUser.fullname}%0A- *Monto:* ${parseInt(amount).toLocaleString('es-PY')} Gs.%0A- *Método:* ${method}%0AAdjunto mi comprobante.`;
+        window.open(`https://wa.me/${adminPhone}?text=${text}`, '_blank');
+    }
+
+    async function spinSlot() {
+        const cost = 5000;
+        if (currentUser.balance < cost) return alert('Saldo insuficiente. Recarga mínimo 5.000 Gs.');
+
+        const r1 = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
+        const r2 = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
+        const r3 = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
+
+        document.getElementById('reel1').innerText = r1;
+        document.getElementById('reel2').innerText = r2;
+        document.getElementById('reel3').innerText = r3;
+
+        let win = false;
+        let winAmount = 0;
+
+        if (r1 === r2 && r2 === r3) {
+            win = true;
+            winAmount = cost * 5; // Multiplicador x5
+            alert(`🎉 ¡GANASTE ₲ ${winAmount.toLocaleString('es-PY')}!`);
+        }
+
+        await fetch('/api/game/update-balance', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${userToken}` },
+            body: JSON.stringify({ amount: win ? winAmount : cost, win })
+        });
+
+        fetchProfile();
+    }
+
+    async function buyScratch() {
+        if (scratchGameActive) return;
+
+        const cost = 5000;
+        if (currentUser.balance < cost) return alert('Saldo insuficiente para comprar una raspadita.');
+
+        const res = await fetch('/api/game/update-balance', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${userToken}` },
+            body: JSON.stringify({ amount: cost, win: false })
+        });
+
+        if (!res.ok) return alert('Error al comprar la raspadita.');
+        await fetchProfile();
+
+        const winChance = Math.random();
+        currentScratchSymbols = [];
+
+        if (winChance < 0.15) {
+            const winningSymbol = SCRATCH_SYMBOLS[Math.floor(Math.random() * SCRATCH_SYMBOLS.length)];
+            currentScratchSymbols = [winningSymbol, winningSymbol, winningSymbol];
+            for(let i=3; i<6; i++) {
+                let randomSym;
+                do { randomSym = SCRATCH_SYMBOLS[Math.floor(Math.random() * SCRATCH_SYMBOLS.length)]; } while (randomSym === winningSymbol);
+                currentScratchSymbols.push(randomSym);
+            }
+        } else {
+            for(let i=0; i<6; i++) {
+                currentScratchSymbols.push(SCRATCH_SYMBOLS[Math.floor(Math.random() * SCRATCH_SYMBOLS.length)]);
+            }
+        }
+        
+        currentScratchSymbols.sort(() => Math.random() - 0.5);
+
+        scratchGameActive = true;
+        revealedCount = 0;
+        panelsRevealed = [false, false, false, false, false, false];
+        document.getElementById('btnBuyScratch').classList.add('hidden');
+        document.getElementById('btnClaimScratch').classList.add('hidden');
+
+        for(let i=0; i<6; i++) {
+            const panel = document.getElementById(`panel${i}`);
+            panel.innerText = '?';
+            panel.classList.remove('revealed');
+        }
+    }
+
+    function revealPanel(index) {
+        if (!scratchGameActive || panelsRevealed[index]) return;
+
+        panelsRevealed[index] = true;
+        revealedCount++;
+
+        const panel = document.getElementById(`panel${index}`);
+        panel.innerText = currentScratchSymbols[index];
+        panel.classList.add('revealed');
+
+        if (revealedCount === 6) {
+            scratchGameActive = false;
+            document.getElementById('btnClaimScratch').classList.remove('hidden');
+        }
+    }
+
+    async function claimScratch() {
+        document.getElementById('btnClaimScratch').classList.add('hidden');
+
+        const counts = {};
+        currentScratchSymbols.forEach(sym => counts[sym] = (counts[sym] || 0) + 1);
+
+        let winAmount = 0;
+        let win = false;
+
+        for (const sym in counts) {
+            if (counts[sym] >= 3) {
+                win = true;
+                winAmount = 5000 * 10;
+                break;
+            }
+        }
+
+        if (win) {
+            alert(`🎉 ¡GANASTE ₲ ${winAmount.toLocaleString('es-PY')}!`);
+            await fetch('/api/game/update-balance', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${userToken}` },
+                body: JSON.stringify({ amount: winAmount, win: true })
+            });
+            fetchProfile();
+        } else {
+            alert('😞 No lograste juntar 3 símbolos iguales. ¡Intenta de nuevo!');
+            fetchProfile();
+        }
+        
+        document.getElementById('btnBuyScratch').classList.remove('hidden');
+    }
+
+    async function placeDinoBet() {
+        const cost = 5000;
+        if (currentUser.balance < cost) return alert('Saldo insuficiente para jugar.');
+
+        const res = await fetch('/api/game/update-balance', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${userToken}` },
+            body: JSON.stringify({ amount: cost, win: false })
+        });
+
+        if (!res.ok) return alert('Error al iniciar la apuesta.');
+        await fetchProfile();
+
+        dinoGameActive = true;
+        currentMultiplier = 1.00;
+        document.getElementById('multiplier').innerText = '1.00x';
+        document.getElementById('btnPlaceDinoBet').classList.add('hidden');
+        document.getElementById('btnCashoutDino').classList.remove('hidden');
+
+        const crashPoint = 1 + (Math.random() * 0.8);
+
+        dinoInterval = setInterval(() => {
+            currentMultiplier += 0.05;
+            document.getElementById('multiplier').innerText = currentMultiplier.toFixed(2) + 'x';
+            
+            if (currentMultiplier >= crashPoint) {
+                clearInterval(dinoInterval);
+                dinoGameActive = false;
+                document.getElementById('multiplier').innerText = '💥 CRASH! 💥';
+                document.getElementById('btnPlaceDinoBet').classList.remove('hidden');
+                document.getElementById('btnCashoutDino').classList.add('hidden');
+                alert('😞 El dino se fue. Perdiste la apuesta.');
+                fetchProfile();
+            }
+        }, 300);
+    }
+
+    async function cashoutDino() {
+        if (!dinoGameActive) return;
+
+        clearInterval(dinoInterval);
+        dinoGameActive = false;
+        
+        const winAmount = 5000 * currentMultiplier;
+        document.getElementById('multiplier').innerText = '🎉 RETIRADO ' + currentMultiplier.toFixed(2) + 'x';
+        alert(`🎉 ¡RETIRASTE ₲ ${Math.floor(winAmount).toLocaleString('es-PY')}!`);
+
+        await fetch('/api/game/update-balance', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${userToken}` },
+            body: JSON.stringify({ amount: Math.floor(winAmount), win: true })
+        });
+
+        fetchProfile();
+        document.getElementById('btnPlaceDinoBet').classList.remove('hidden');
+        document.getElementById('btnCashoutDino').classList.add('hidden');
+    }
+
+    async function loadAdminUsers() {
+        const res = await fetch('/api/admin/users', { headers: { 'Authorization': `Bearer ${userToken}` } });
+        const users = await res.json();
+        const tbody = document.getElementById('usersTableBody');
+        tbody.innerHTML = '';
+
+        users.forEach(u => {
+            tbody.innerHTML += `
+                <tr>
+                    <td>${u.id}</td>
+                    <td>${u.ci}</td>
+                    <td>${u.fullname} (@${u.username})</td>
+                    <td><strong>₲ ${u.balance.toLocaleString('es-PY')}</strong></td>
+                    <td>
+                        <button class="green" style="width:auto;" onclick="adjustBalance(${u.id}, 'add')">+ Cargar</button>
+                        <button class="red" style="width:auto;" onclick="adjustBalance(${u.id}, 'subtract')">- Restar</button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    async function adjustBalance(userId, action) {
+        const amount = prompt(`Ingrese el monto a ${action === 'add' ? 'cargar' : 'restar'} (Gs.):`);
+        if (!amount || isNaN(amount)) return;
+
+        const res = await fetch('/api/admin/adjust-balance', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${userToken}` },
+            body: JSON.stringify({ userId, amount, action })
+        });
+        if (res.ok) {
+            alert('Saldo actualizado correctamente.');
+            loadAdminUsers();
+        }
+    }
+
+    async function adminCreateUser() {
+        const username = document.getElementById('admRegUser').value;
+        const fullname = document.getElementById('admRegName').value;
+        const ci = document.getElementById('admRegCI').value;
+        const phone = document.getElementById('admRegPhone').value;
+        const password = document.getElementById('admRegPass').value;
+        const initialBalance = document.getElementById('admRegBalance').value;
+
+        const res = await fetch('/api/admin/create-user', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${userToken}` },
+            body: JSON.stringify({ username, fullname, ci, phone, password, initialBalance })
+        });
+        if (res.ok) {
+            alert('Usuario creado con éxito.');
+            loadAdminUsers();
+        } else { alert('Error al crear usuario.'); }
+    }
+</script>
+</body>
+</html>
